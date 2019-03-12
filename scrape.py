@@ -8,6 +8,9 @@ from csv import reader
 # soup = BeautifulSoup(response.text, 'html.parser')
 # posts = soup.find_all(class_='post-preview')
 
+empty = ""
+entries = 0
+link_count = 0
 
 data = []
 header = ['Full Name', 'First Name', 'Last Name', 'Title', 'Phone', 'Mobile	Email', 'Agency', 'Address',
@@ -17,60 +20,109 @@ f = open('links.txt', 'r')
 links = f.readlines()
 f.close()
 
-a = "https://www.raywhite.com/contact/?type=People&target=people&suburb=ABBA+RIVER%2C+WA+6280&radius=50&firstname=&lastname=&_so=contact"
+# a = "https://www.raywhite.com/contact/?type=People&target=people&suburb=ABBA+RIVER%2C+WA+6280&radius=50&firstname=&lastname=&_so=contact"
 
-# for link in links:
-#response = requests.get(a)
+with open('data.csv', 'w') as csv_file:
+    csv_writer = writer(csv_file)
+    csv_writer.writerow(header)
 
-response = requests.get(a, headers={'User-agent': 'your bot 0.1'})
-soup = BeautifulSoup(response.text, 'html.parser')
-raw_data = soup.find_all(class_='list-group')
+    for link in links:
 
-for post in raw_data:
+        link_count += 1
+        response = requests.get(link, headers={'User-agent': 'your bot 0.1'})
+        soup = BeautifulSoup(response.text, 'html.parser')
+        raw_data = soup.find_all(class_='list-group')
 
-    # Get all the agency information
-    agency = post.find(class_='no-text-transform').get_text().strip()
-    # Get the address info from the agency information
-    address = post.find('address').next_element.replace('·', '').strip()
-    # Split the address into a list by removing the commas
-    address = address.rsplit(', ', 2)
-    # Split the territory and postcode
-    temp = address[-1].rsplit(' ', 1)
-    # Removes the territory and postcode as it's a single string
-    del address[-1]
-    # Appends to the address list the territory and postcode
-    address.append(temp[0])
-    address.append(temp[1])
+        for post in raw_data:
 
-    print(agency)
-    print(address)
+            # Get all the agency information
+            agency = post.find(class_='no-text-transform').get_text().strip()
+            # Get the address info from the agency information
+            address = post.find(
+                'address').next_element.replace('·', '').strip()
+            # Split the address into a list by removing the commas
+            address = address.rsplit(', ', 2)
+            # Split the territory and postcode
+            temp = address[-1].rsplit(' ', 1)
+            # Removes the territory and postcode as it's a single string
+            del address[-1]
+            # Appends to the address list the territory and postcode
+            address.append(temp[0])
+            address.append(temp[1])
 
-    agents = post.find_all(class_='card horizontal-split vcard')
+            city = address[1]
+            state = address[2]
+            postcode = address[3]
 
-    for agent in agents:
-        agent_name = agent.find(class_='agent-name').get_text().strip()
-        agent_role = agent.find(class_='agent-role').get_text().strip()
-        agent_mobile = agent.find(class_='agent-mobile')
-        agent_mobile2 = agent_mobile.find('a').get_text()
-        # agent_officenum = agent.find(
-        #     class_='agent-officenum').next_element.get_text().strip()
-        # agent_email = agent.find(class_='agent-email')
+            agents = post.find_all(class_='card horizontal-split vcard')
 
-        # li = soup.find('li', {'class': 'text'})
-        # children = li.findChildren("a", recursive=False)
+            for agent in agents:
 
-        print(agent_name)
-        print(agent_role)
-        print(agent_mobile2)
-        # print(agent.prettify())
+                try:
+                    agent_fullname = agent.find(
+                        class_='agent-name').get_text().strip()
+                    agent_firstname = (agent_fullname.split())[0]
+                    agent_lastname = (agent_fullname.split())[-1]
+                except:
+                    agent_fullname = empty
+                    agent_firstname = empty
+                    agent_lastname = empty
 
-# with open('posts.csv', 'w') as csv_file:
+                try:
+                    agent_role = agent.find(
+                        class_='agent-role').get_text().strip()
+                except:
+                    agent_role = empty
+
+                try:
+                    agent_mobile_data = agent.find(class_='agent-mobile')
+                    try:
+                        agent_mobile = agent_mobile_data.find('a').get_text()
+                    except:
+                        agent_mobile = empty
+                except:
+                    agent_mobile = empty
+
+                try:
+                    agent_officenum_data = agent.find(class_='agent-officenum')
+                    try:
+                        agent_officenum = agent_officenum_data.find(
+                            'a').get_text()
+                    except:
+                        agent_officenum = empty
+                except:
+                    agent_officenum = empty
+
+                try:
+                    agent_email_data = agent.find(class_='email')
+                    try:
+                        agent_email = agent_email_data.find(
+                            'a', href=True).get('href').replace('mailto:', '')
+                    except:
+                        agent_email = empty
+                except:
+                    agent_email = empty
+
+                data.append([agent_fullname, agent_firstname, agent_lastname, agent_role,
+                             agent_officenum, agent_mobile, agency, address[0], city, state, postcode, link.strip()])
+
+                csv_writer.writerow([agent_fullname, agent_firstname, agent_lastname, agent_role,
+                                     agent_officenum, agent_mobile, agency, address[0], city, state, postcode, link.strip()])
+
+                entries += 1
+                print("Links: " + str(link_count) +
+                      " Entries: " + str(entries))
+
+            # header = ['Full Name', 'First Name', 'Last Name', 'Title', 'Phone', 'Mobile	Email', 'Agency', 'Address',
+            #           'City', 'State', 'Postcode', 'Page URL']
+
+# print(data)
+# print(len(data))
+
+# with open('data.csv', 'w') as csv_file:
 #     csv_writer = writer(csv_file)
-#     headers = ['Title', 'Link', 'Date']
+#     headers = header
 #     csv_writer.writerow(headers)
 
-#     for post in posts:
-#         title = post.find(class_='post-title').get_text().replace('\n', '')
-#         link = post.find('a')['href']
-#         date = post.select('.post-date')[0].get_text()
-#         csv_writer.writerow([title, link, date])
+    # for each in data:
+    #     csv_writer.writerow(each)

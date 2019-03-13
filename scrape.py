@@ -12,8 +12,11 @@ empty = ""
 entries = 0
 link_count = 0
 
+people = []
+emails = []
 data = []
-header = ['Full Name', 'First Name', 'Last Name', 'Title', 'Phone', 'Mobile	Email', 'Agency', 'Address',
+agencies = []
+header = ['Full Name', 'First Name', 'Last Name', 'Title', 'Phone', 'Mobile', 'Email', 'Agency', 'Address',
           'City', 'State', 'Postcode', 'Page URL']
 
 f = open('links.txt', 'r')
@@ -22,13 +25,16 @@ f.close()
 
 # a = "https://www.raywhite.com/contact/?type=People&target=people&suburb=ABBA+RIVER%2C+WA+6280&radius=50&firstname=&lastname=&_so=contact"
 
-with open('data.csv', 'w') as csv_file:
+with open('data_3.csv', 'w') as csv_file:
     csv_writer = writer(csv_file)
     csv_writer.writerow(header)
 
     for link in links:
 
         link_count += 1
+        print("Links: " + str(link_count) +
+              " Entries: " + str(entries))
+
         response = requests.get(link, headers={'User-agent': 'your bot 0.1'})
         soup = BeautifulSoup(response.text, 'html.parser')
         raw_data = soup.find_all(class_='list-group')
@@ -37,6 +43,7 @@ with open('data.csv', 'w') as csv_file:
 
             # Get all the agency information
             agency = post.find(class_='no-text-transform').get_text().strip()
+
             # Get the address info from the agency information
             address = post.find(
                 'address').next_element.replace('·', '').strip()
@@ -56,62 +63,78 @@ with open('data.csv', 'w') as csv_file:
 
             agents = post.find_all(class_='card horizontal-split vcard')
 
-            for agent in agents:
+            if agency in agencies:
+                break
+            else:
+                agencies.append(agency)
 
-                try:
-                    agent_fullname = agent.find(
-                        class_='agent-name').get_text().strip()
-                    agent_firstname = (agent_fullname.split())[0]
-                    agent_lastname = (agent_fullname.split())[-1]
-                except:
-                    agent_fullname = empty
-                    agent_firstname = empty
-                    agent_lastname = empty
+                for agent in agents:
 
-                try:
-                    agent_role = agent.find(
-                        class_='agent-role').get_text().strip()
-                except:
-                    agent_role = empty
-
-                try:
-                    agent_mobile_data = agent.find(class_='agent-mobile')
                     try:
-                        agent_mobile = agent_mobile_data.find('a').get_text()
+                        agent_fullname = agent.find(
+                            class_='agent-name').get_text().strip()
+                        agent_firstname = (agent_fullname.split())[0]
+                        agent_lastname = (agent_fullname.split())[-1]
+                    except:
+                        agent_fullname = empty
+                        agent_firstname = empty
+                        agent_lastname = empty
+
+                    try:
+                        agent_role = agent.find(
+                            class_='agent-role').get_text().strip()
+                    except:
+                        agent_role = empty
+
+                    try:
+                        agent_mobile_data = agent.find(class_='agent-mobile')
+                        try:
+                            agent_mobile = agent_mobile_data.find(
+                                'a').get_text()
+                        except:
+                            agent_mobile = empty
                     except:
                         agent_mobile = empty
-                except:
-                    agent_mobile = empty
 
-                try:
-                    agent_officenum_data = agent.find(class_='agent-officenum')
                     try:
-                        agent_officenum = agent_officenum_data.find(
-                            'a').get_text()
+                        agent_officenum_data = agent.find(
+                            class_='agent-officenum')
+                        try:
+                            agent_officenum = agent_officenum_data.find(
+                                'a').get_text()
+                        except:
+                            agent_officenum = empty
                     except:
                         agent_officenum = empty
-                except:
-                    agent_officenum = empty
 
-                try:
-                    agent_email_data = agent.find(class_='email')
                     try:
-                        agent_email = agent_email_data.find(
-                            'a', href=True).get('href').replace('mailto:', '')
+                        agent_email_data = agent.find(class_='email')
+                        try:
+                            agent_email = agent_email_data.find(
+                                'a', href=True).get('href').replace('mailto:', '')
+                        except:
+                            agent_email = empty
                     except:
                         agent_email = empty
-                except:
-                    agent_email = empty
 
-                data.append([agent_fullname, agent_firstname, agent_lastname, agent_role,
-                             agent_officenum, agent_mobile, agency, address[0], city, state, postcode, link.strip()])
+                    if agent_email in emails and agent_email != "":
+                        break
+                    else:
+                        if agent_email == "" and agent_fullname in people:
+                            break
+                        else:
+                            emails.append(agent_email)
+                            people.append(agent_fullname)
 
-                csv_writer.writerow([agent_fullname, agent_firstname, agent_lastname, agent_role,
-                                     agent_officenum, agent_mobile, agency, address[0], city, state, postcode, link.strip()])
+                            # data.append([agent_fullname, agent_firstname, agent_lastname, agent_role,
+                            #              agent_officenum, agent_mobile, agent_email, agency, address[0], city, state, postcode, link.strip()])
 
-                entries += 1
-                print("Links: " + str(link_count) +
-                      " Entries: " + str(entries))
+                            csv_writer.writerow([agent_fullname, agent_firstname, agent_lastname, agent_role,
+                                                 agent_officenum, agent_mobile, agent_email, agency, address[0], city, state, postcode, link.strip()])
+
+                            entries += 1
+                    # print("Links: " + str(link_count) +
+                    #       " Entries: " + str(entries))
 
             # header = ['Full Name', 'First Name', 'Last Name', 'Title', 'Phone', 'Mobile	Email', 'Agency', 'Address',
             #           'City', 'State', 'Postcode', 'Page URL']

@@ -1,8 +1,8 @@
 # REAL ESTATE PROJECT - Web Scraping
 
-The task was to scrape information on estate agents from a list of links / web pages. Scrape the info, and store it in a CSV file for the client.
+The task was to scrape information on real estate agents from a list of links / web pages. Scrape the info, and store it in a CSV file for the client.
 
-### Installing
+## Installation
 
 Clone the the repository.
 

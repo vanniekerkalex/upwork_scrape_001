@@ -7,7 +7,7 @@ The task was to scrape information on real estate agents from a list of links / 
 Clone the the repository.
 
 ```
-git clone https://github.com/vanniekerkalex/push_swap.git
+git clone https://github.com/vanniekerkalex/upwork_scrape_001.git
 ```
 
 Execute the program as follows
